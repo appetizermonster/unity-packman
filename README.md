@@ -8,7 +8,7 @@ unity-packman install
 ```
 
 ## Example of packman.json
-```json
+```javascript
 {
   "name": "Package Name",
   "export": "Assets/SomeFolder",                 // Path to export
