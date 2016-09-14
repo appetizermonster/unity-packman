@@ -127,7 +127,7 @@ function* gitIgnore() {
   } catch (e) {}
   
   const lines = contents.split(/\r?\n/);
-  const ignorePaths = ['node_modules/', 'packman-pkgs/', '.packman/'];
+  const ignorePaths = ['node_modules/', 'packman-pkgs.meta', 'packman-pkgs/', '.packman/'];
   let shouldInsert = false;
   
   // pre-pass
