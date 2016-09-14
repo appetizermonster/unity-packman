@@ -31,6 +31,7 @@ unity-packman gitignore
   "dependencies": [
     "appetizermonster/Unity3D-RecompileDisabler"  // Github Short URI
   ]
+}
 ```
 
 ## License
