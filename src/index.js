@@ -123,6 +123,20 @@ function* gitIgnore() {
   
   const lines = contents.split(/\r?\n/);
   const ignorePaths = ['node_modules/', 'packman-pkgs/', '.packman/'];
+  let shouldInsert = false;
+  
+  // pre-pass
+  for (const ignorePath of ignorePaths) {
+    if (lines.indexOf(ignorePath) < 0) {
+      shouldInsert = true;
+      break;
+    }
+  }
+  
+  if (shouldInsert)
+    contents += '\n\n# unity-packman';
+  
+  // insert ignore paths
   for (const ignorePath of ignorePaths) {
     if (lines.indexOf(ignorePath) < 0) {
       console.log(`inserting ${ignorePath}`.yellow);
