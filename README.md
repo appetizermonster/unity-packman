@@ -9,7 +9,7 @@ with `unity-packman`, all package dependencies will be installed in `Assets/Plug
 you don't need to copy packages manually.
 
 ## Requirements
-- nodejs / npm
+- nodejs (>= 6.0.0) / npm
 - git
 
 ## Usage
