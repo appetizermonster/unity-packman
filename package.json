@@ -1,6 +1,6 @@
 {
   "name": "unity-packman",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "A tiny package dependency manager for Unity, powered by Github",
   "main": "cli.js",
   "repository": {
