@@ -1,5 +1,6 @@
 'use strict';
 
+const assert = require('assert');
 const Git = require('simple-git');
 const fse = require('fs-extra');
 

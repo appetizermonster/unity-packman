@@ -1,6 +1,5 @@
 'use strict';
 
-const assert = require('assert');
 const co = require('co');
 const fs = require('fs');
 const fse = require('fs-extra');
@@ -9,6 +8,7 @@ const colors = require('colors');
 
 const gitUtil = require('./git-util');
 const format = require('./format');
+const env = require('./env');
 
 function readJson(_path) {
   return new Promise((resolve, reject) => {
@@ -25,26 +25,27 @@ function readPackmanObj(_path) {
   return readJson(jsonPath);
 }
 
-const PKG_STORAGE = path.resolve('.packman');
-const TEMP_STORAGE = path.resolve('.tmp_packman');
-const PKG_STAGE = path.resolve('Assets/Plugins/packman-pkgs');
+function writePackmanObj(_path, packmanObj) {
+  const jsonPath = path.join(path.resolve(_path), 'packman.json');
+  fse.writeJsonSync(jsonPath, packmanObj, { spaces: 2 });
+}
 
-function* checkShouldUpdate(simpleUri) {
-  const uniqueName = format.toUniqueName(simpleUri);
-  const gitUri = format.toGitUri(simpleUri);
+function* checkShouldUpdate(shortUri) {
+  const uniqueName = format.toUniqueName(shortUri);
+  const gitUri = format.toGitUri(shortUri);
   
-  const storagePath = path.join(PKG_STORAGE, uniqueName);
+  const storagePath = path.join(env.PKG_STORAGE, uniqueName);
   const packmanObj = yield readPackmanObj(storagePath);
   if (packmanObj === null)
     return true;
   
   const localCommit = yield gitUtil.fetchLocalHeadCommit(storagePath);
-  console.log(`${simpleUri}: local: ${localCommit}`.yellow);
+  console.log(`${shortUri}: local: ${localCommit}`.yellow);
   if (localCommit === undefined)
     return true;
     
   const remoteCommit = yield gitUtil.fetchHeadCommit(gitUri);
-  console.log(`${simpleUri}: remote: ${remoteCommit}`.yellow);
+  console.log(`${shortUri}: remote: ${remoteCommit}`.yellow);
   if (localCommit !== remoteCommit)
     return true;
   return false;
@@ -109,57 +110,44 @@ function* gitIgnore() {
   console.log('done'.green);
 }
 
-function* install() {
-  const basePackmanObj = yield readPackmanObj('.');
-  if (basePackmanObj === null)
-    throw new Error('no base packman file');
-    
-  fse.ensureDirSync(PKG_STORAGE);
-  fse.ensureDirSync(PKG_STAGE);  
-  
-  console.log('inspecting dependencies...\n');
-  
-  fse.emptyDirSync(TEMP_STORAGE);
-  
-  const dependencies = basePackmanObj.dependencies;
-  if (!dependencies) {
-    console.log('no dependencies to install'.green);
-    return;
-  }
+function* installDependencies(dependencies) {
+  fse.ensureDirSync(env.PKG_STORAGE);
+  fse.ensureDirSync(env.PKG_STAGE);  
+  fse.emptyDirSync(env.TEMP_STORAGE);
   
   const doneDeps = [];
   const waitingDeps = [].concat(dependencies);
   while (waitingDeps.length > 0) {
-    const simpleUri = waitingDeps.pop();
-    doneDeps.push(simpleUri);
+    const shortUri = waitingDeps.pop();
+    doneDeps.push(shortUri);
     
-    const uniqueName = format.toUniqueName(simpleUri);
-    const gitUri = format.toGitUri(simpleUri);
-    const tempRepoPath = path.join(TEMP_STORAGE, uniqueName);
+    const uniqueName = format.toUniqueName(shortUri);
+    const gitUri = format.toGitUri(shortUri);
+    const tempRepoPath = path.join(env.TEMP_STORAGE, uniqueName);
     
-    const isUpdatable = yield checkShouldUpdate(simpleUri);
+    const isUpdatable = yield checkShouldUpdate(shortUri);
     if (!isUpdatable) {
-      console.log(`no need to update: ${simpleUri}`.green);
+      console.log(`no need to update: ${shortUri}`.green);
       continue;
     }
-      
+    
     console.log(`cloning ${gitUri}`);
     yield gitUtil.cloneRepo(gitUri, tempRepoPath);
     
     const packmanObj = yield readPackmanObj(tempRepoPath);
     if (packmanObj === null) {
-      console.log(`${simpleUri} has no packman file`.red);
+      console.log(`${shortUri} has no packman file`.red);
       continue;
     }
   
     // inspecting another dependencies    
     const deps = packmanObj.dependencies;
     if (deps) {
-      console.log(`inspecting dependencies from ${simpleUri}`);
+      console.log(`inspecting dependencies from ${shortUri}`);
       for (const dep of deps) {
         if (doneDeps.indexOf(dep) >= 0 || waitingDeps.indexOf(dep) >= 0)
           continue;
-        if (dep === simpleUri)
+        if (dep === shortUri)
           continue;
         console.log(`found dependency: ${dep}`.yellow);
         waitingDeps.push(dep);
@@ -168,28 +156,73 @@ function* install() {
     
     const exportDir = packmanObj.export;
     if (!exportDir) {
-      console.log(`${simpleUri} has no export directory`.red);
+      console.log(`${shortUri} has no export directory`.red);
       continue;
     }
        
-    const storagePath = path.join(PKG_STORAGE, uniqueName);
+    const storagePath = path.join(env.PKG_STORAGE, uniqueName);
     fse.emptyDirSync(storagePath);
     fse.copySync(tempRepoPath, storagePath);
     
-    console.log(`copying to stage: ${simpleUri}`);
-    const stagePath = path.join(PKG_STAGE, uniqueName);
+    console.log(`copying to stage: ${shortUri}`);
+    const stagePath = path.join(env.PKG_STAGE, uniqueName);
     const exportPath = path.join(storagePath, exportDir);
     fse.emptyDirSync(stagePath);
     fse.copySync(exportPath, stagePath);
     console.log('complete'.green);
   }
   
-  fse.removeSync(TEMP_STORAGE);
+  fse.removeSync(env.TEMP_STORAGE);
+}
+
+function* install(dependencies) {
+  const basePackmanObj = yield readPackmanObj('.');
+  if (basePackmanObj === null) {
+    console.log('no packman file'.red);
+    return;
+  }
+  
+  console.log('installing dependencies...\n');
+  yield installDependencies(dependencies);
+  
+  console.log('updating packman.json...'.yellow);
+  const storedDependencies = basePackmanObj.dependencies || [];
+  for (const dependency of dependencies) {
+    const contains = storedDependencies.indexOf(dependency) >= 0;
+    if (contains)
+      continue;
+    storedDependencies.push(dependency);
+  }
+  storedDependencies.sort();
+  
+  // replace stored dependencies
+  basePackmanObj.dependencies = storedDependencies;
+  writePackmanObj('.', basePackmanObj);
+  
+  console.log('done'.cyan);
+}
+
+function* installAll() {
+  const basePackmanObj = yield readPackmanObj('.');
+  if (basePackmanObj === null) {
+    console.log('no packman file'.red);
+    return;
+  }
+  
+  console.log('inspecting dependencies...\n');
+  const dependencies = basePackmanObj.dependencies;
+  if (!dependencies) {
+    console.log('no dependencies to install'.green);
+    return;
+  }
+  
+  yield installDependencies(dependencies);
   console.log('done'.cyan);
 }
 
 module.exports = {
   init: co.wrap(init),
   gitIgnore: co.wrap(gitIgnore),
-  install: co.wrap(install) 
+  install: co.wrap(install),
+  installAll: co.wrap(installAll)
 };

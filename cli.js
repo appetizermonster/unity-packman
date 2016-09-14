@@ -5,7 +5,7 @@ const pkg = require('./package.json');
 const packman = require('./src');
 const program = require('commander');
 
-console.log('- unity-packman'.bold);
+console.log(`- unity-packman ${pkg.version}`.bold);
 
 program
   .command('init')
@@ -23,10 +23,12 @@ program
 
 program
   .version(pkg.version)
-  .command('install')
+  .command('install [repo...]')
   .description('install dependencies')
-  .action(function () {
-    packman.install().catch(console.error);
+  .action(function (repos) {
+    if (!repos || repos.length === 0)
+      return packman.installAll().catch(console.error);
+    return packman.install(repos).catch(console.error);
   });
 
 program.parse(process.argv);

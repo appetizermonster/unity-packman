@@ -1,11 +1,11 @@
 'use strict';
 
-function toGitUri(simpleUri) {
-  return `https://github.com/${simpleUri}.git`; 
+function toGitUri(shortUri) {
+  return `https://github.com/${shortUri}.git`; 
 }
 
-function toUniqueName(simpleUri) {
-  return simpleUri.split('/')[1];
+function toUniqueName(shortUri) {
+  return shortUri.split('/')[1];
 }
 
 module.exports = {
