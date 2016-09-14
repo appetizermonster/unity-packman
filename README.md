@@ -39,5 +39,9 @@ unity-packman gitignore
 }
 ```
 
+## Example Packages
+- [appetizermonster/Unity3D-Co](https://github.com/appetizermonster/Unity3D-Co)
+- [appetizermonster/Unity3D-RecompileDisabler](https://github.com/appetizermonster/Unity3D-RecompileDisabler)
+
 ## License
 MIT
