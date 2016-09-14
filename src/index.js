@@ -176,8 +176,8 @@ function* installDependencies(dependencies) {
 }
 
 function* install(dependencies) {
-  const basePackmanObj = yield readPackmanObj('.');
-  if (basePackmanObj === null) {
+  const packmanObj = yield readPackmanObj('.');
+  if (packmanObj === null) {
     console.log('no packman file'.red);
     return;
   }
@@ -186,7 +186,7 @@ function* install(dependencies) {
   yield installDependencies(dependencies);
   
   console.log('updating packman.json...'.yellow);
-  const storedDependencies = basePackmanObj.dependencies || [];
+  const storedDependencies = packmanObj.dependencies || [];
   for (const dependency of dependencies) {
     const contains = storedDependencies.indexOf(dependency) >= 0;
     if (contains)
@@ -196,21 +196,21 @@ function* install(dependencies) {
   storedDependencies.sort();
   
   // replace stored dependencies
-  basePackmanObj.dependencies = storedDependencies;
-  writePackmanObj('.', basePackmanObj);
+  packmanObj.dependencies = storedDependencies;
+  writePackmanObj('.', packmanObj);
   
   console.log('done'.cyan);
 }
 
 function* installAll() {
-  const basePackmanObj = yield readPackmanObj('.');
-  if (basePackmanObj === null) {
+  const packmanObj = yield readPackmanObj('.');
+  if (packmanObj === null) {
     console.log('no packman file'.red);
     return;
   }
   
   console.log('inspecting dependencies...\n');
-  const dependencies = basePackmanObj.dependencies;
+  const dependencies = packmanObj.dependencies;
   if (!dependencies) {
     console.log('no dependencies to install'.green);
     return;
@@ -220,9 +220,50 @@ function* installAll() {
   console.log('done'.cyan);
 }
 
+function* remove(dependencies) {
+  if (!dependencies || dependencies.length === 0) {
+    console.log('please specify dependencies to remove'.red);
+    return;  
+  }
+  
+  const packmanObj = yield readPackmanObj('.');
+  if (packmanObj === null) {
+    console.log('no packman file'.red);
+    return;
+  }
+    
+  const storedDependencies = packmanObj.dependencies;
+  const newDependencies = [];
+  for (const dependency of storedDependencies) {
+    const shouldRemove = dependencies.indexOf(dependency) >= 0;
+    if (shouldRemove)
+      continue;
+    newDependencies.push(dependency);
+  }
+  
+  console.log('updating packman.json...'.yellow);
+  packmanObj.dependencies = newDependencies;
+  writePackmanObj('.', packmanObj);
+  
+  console.log('removing dependencies...'.yellow);
+  
+  for (const shortUri of dependencies) {
+    const uniqueName = format.toUniqueName(shortUri);
+    const storagePath = path.join(env.PKG_STORAGE, uniqueName);
+    const stagePath = path.join(env.PKG_STAGE, uniqueName);
+    
+    console.log(`removing ${shortUri}...`.yellow);
+    fse.removeSync(storagePath);
+    fse.removeSync(stagePath);
+  }
+  
+  console.log('done'.green);
+}
+
 module.exports = {
   init: co.wrap(init),
   gitIgnore: co.wrap(gitIgnore),
   install: co.wrap(install),
-  installAll: co.wrap(installAll)
+  installAll: co.wrap(installAll),
+  remove: co.wrap(remove)
 };

@@ -22,13 +22,19 @@ program
   });
 
 program
-  .version(pkg.version)
   .command('install [repo...]')
   .description('install dependencies')
   .action(function (repos) {
     if (!repos || repos.length === 0)
       return packman.installAll().catch(console.error);
     return packman.install(repos).catch(console.error);
+  });
+  
+program
+  .command('remove [repo...]')
+  .description('remove dependencies')
+  .action(function (repos) {
+    packman.remove(repos).catch(console.error);
   });
 
 program.parse(process.argv);
