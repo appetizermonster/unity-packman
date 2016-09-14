@@ -13,6 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "co": "4.6.0",
+    "colors": "1.1.2",
     "commander": "2.9.0",
     "fs-extra": "0.30.0",
     "simple-git": "1.48.0"
