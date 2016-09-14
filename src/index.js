@@ -96,14 +96,19 @@ function* checkShouldUpdate(simpleUri) {
 
 function* init() {
   const packmanPath = 'packman.json';
-  const stats = fs.lstatSync(packmanPath);
-  if (stats.isFile()) {
-    console.log('no need to create packman.json'.red);
-    return;  
+  let shouldCreate = true;
+  try {
+    fs.lstatSync(packmanPath);
+    shouldCreate = false;
+  } catch (e) {}
+  
+  if (!shouldCreate) {
+    console.log('no need to create packman.json'.cyan);
+    return;
   }
   
   const initialPackmanObj = {
-    name: path.dirname(path.resolve('.'))
+    name: path.basename(path.resolve('.'))
   };
   const contents = JSON.stringify(initialPackmanObj, null, 2);
   console.log('creating packman.json...'.yellow);
