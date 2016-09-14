@@ -16,7 +16,7 @@ program
 
 program
   .command('gitignore')
-  .description('ensure .gitignore')
+  .description('update .gitignore')
   .action(function () {
     packman.gitIgnore().catch(console.error);
   });
