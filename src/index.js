@@ -208,34 +208,8 @@ function* install() {
   console.log('done'.cyan);
 }
 
-const pkg = require('./package.json');
-const program = require('commander');
-
-console.log('- unity-packman'.bold);
-
-program
-  .command('init')
-  .description('create packman.json')
-  .action(function () {
-    co(init()).catch(console.error);
-  });
-
-program
-  .command('gitignore')
-  .description('ensure .gitignore')
-  .action(function () {
-    co(gitIgnore()).catch(console.error);
-  });
-
-program
-  .version(pkg.version)
-  .command('install')
-  .description('install dependencies')
-  .action(function () {
-    co(install()).catch(console.error);
-  });
-
-program.parse(process.argv);
-
-if (process.argv.slice(2).length === 0)
-  program.help();
+module.exports = {
+  init: co.wrap(init),
+  gitIgnore: co.wrap(gitIgnore),
+  install: co.wrap(install) 
+};

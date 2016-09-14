@@ -1,8 +1,8 @@
 {
   "name": "unity-packman",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A tiny package dependency manager for Unity, powered by Github",
-  "main": "index.js",
+  "main": "cli.js",
   "repository": {
     "url": "https://github.com/appetizermonster/unity-packman.git"
   },
@@ -10,7 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "unity-packman": "./index.js"
+    "unity-packman": "./cli.js"
   },
   "preferGlobal": true,
   "keywords": [
