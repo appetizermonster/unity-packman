@@ -5,46 +5,10 @@ const co = require('co');
 const fs = require('fs');
 const fse = require('fs-extra');
 const path = require('path');
-const Git = require('simple-git');
 const colors = require('colors');
 
-function fetchHeadCommit(uri) {
-  return new Promise((resolve, reject) => {
-    const git = Git();
-    git.listRemote([uri, 'HEAD'], function (err, data) {
-      if (err)
-        return reject(err);
-      const result = data.split('\t');
-      const hash = result[0];
-      assert(hash.length === 40);
-      return resolve(hash);
-    });
-  });
-}
-
-function fetchLocalHeadCommit(repo) {
-  return new Promise((resolve, reject) => {
-    const git = Git(repo);
-    git.revparse(['HEAD'], function (err, data) {
-      if (err)
-        return reject(err);
-      return resolve(data.replace(/\r?\n/, ''));
-    });
-  });
-}
-
-function cloneRepo(uri, dest) {
-  return new Promise((resolve, reject) => {
-    fse.emptyDirSync(dest);
-    
-    const git = Git();
-    git.clone(uri, dest, function (err, data) {
-      if (err)
-        return reject(err);
-      return resolve();
-    });
-  });
-}
+const gitUtil = require('./git-util');
+const format = require('./format');
 
 function readJson(_path) {
   return new Promise((resolve, reject) => {
@@ -61,33 +25,25 @@ function readPackmanObj(_path) {
   return readJson(jsonPath);
 }
 
-function toGitUri(simpleUri) {
-  return `https://github.com/${simpleUri}.git`; 
-}
-
-function toUniqueName(simpleUri) {
-  return simpleUri.split('/')[1];
-}
-
 const PKG_STORAGE = path.resolve('.packman');
 const TEMP_STORAGE = path.resolve('.tmp_packman');
 const PKG_STAGE = path.resolve('Assets/Plugins/packman-pkgs');
 
 function* checkShouldUpdate(simpleUri) {
-  const uniqueName = toUniqueName(simpleUri);
-  const gitUri = toGitUri(simpleUri);
+  const uniqueName = format.toUniqueName(simpleUri);
+  const gitUri = format.toGitUri(simpleUri);
   
   const storagePath = path.join(PKG_STORAGE, uniqueName);
   const packmanObj = yield readPackmanObj(storagePath);
   if (packmanObj === null)
     return true;
   
-  const localCommit = yield fetchLocalHeadCommit(storagePath);
+  const localCommit = yield gitUtil.fetchLocalHeadCommit(storagePath);
   console.log(`${simpleUri}: local: ${localCommit}`.yellow);
   if (localCommit === undefined)
     return true;
     
-  const remoteCommit = yield fetchHeadCommit(gitUri);
+  const remoteCommit = yield gitUtil.fetchHeadCommit(gitUri);
   console.log(`${simpleUri}: remote: ${remoteCommit}`.yellow);
   if (localCommit !== remoteCommit)
     return true;
@@ -127,7 +83,7 @@ function* gitIgnore() {
   } catch (e) {}
   
   const lines = contents.split(/\r?\n/);
-  const ignorePaths = ['node_modules/', 'packman-pkgs.meta', 'packman-pkgs/', '.packman/'];
+  const ignorePaths = ['node_modules/', '.packman/'];
   let shouldInsert = false;
   
   // pre-pass
@@ -166,14 +122,19 @@ function* install() {
   fse.emptyDirSync(TEMP_STORAGE);
   
   const dependencies = basePackmanObj.dependencies;
+  if (!dependencies) {
+    console.log('no dependencies to install'.green);
+    return;
+  }
+  
   const doneDeps = [];
   const waitingDeps = [].concat(dependencies);
   while (waitingDeps.length > 0) {
     const simpleUri = waitingDeps.pop();
     doneDeps.push(simpleUri);
     
-    const uniqueName = toUniqueName(simpleUri);
-    const gitUri = toGitUri(simpleUri);
+    const uniqueName = format.toUniqueName(simpleUri);
+    const gitUri = format.toGitUri(simpleUri);
     const tempRepoPath = path.join(TEMP_STORAGE, uniqueName);
     
     const isUpdatable = yield checkShouldUpdate(simpleUri);
@@ -183,7 +144,7 @@ function* install() {
     }
       
     console.log(`cloning ${gitUri}`);
-    yield cloneRepo(gitUri, tempRepoPath);
+    yield gitUtil.cloneRepo(gitUri, tempRepoPath);
     
     const packmanObj = yield readPackmanObj(tempRepoPath);
     if (packmanObj === null) {
