@@ -1,7 +1,7 @@
 {
   "name": "unity-packman",
   "version": "0.0.1",
-  "description": "A unity dependency manager",
+  "description": "A tiny package dependency manager for Unity, powered by Github",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

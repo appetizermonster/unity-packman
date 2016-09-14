@@ -1,5 +1,5 @@
 # unity-packman
-A tiny package dependency manager for Unity 5, powered by Github
+A tiny package dependency manager for Unity, powered by Github
 
 ## Getting Started
 ```bash
