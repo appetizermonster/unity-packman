@@ -13,9 +13,14 @@ unity-packman init
 unity-packman install appetizermonster/Unity3D-Co
 ```
 
-- Installing All Dependencies
+- Install All Dependencies
 ```bash
 unity-packman install
+```
+
+- Remove Installed Dependency
+```bash
+unity-packman remove appetizermonster/Unity3D-Co
 ```
 
 - Update `.gitignore` for unity-packman
