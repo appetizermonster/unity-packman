@@ -122,7 +122,7 @@ function* gitIgnore() {
   } catch (e) {}
   
   const lines = contents.split(/\r?\n/);
-  const ignorePaths = ['packman-pkgs/', '.packman/'];
+  const ignorePaths = ['node_modules/', 'packman-pkgs/', '.packman/'];
   for (const ignorePath of ignorePaths) {
     if (lines.indexOf(ignorePath) < 0) {
       console.log(`inserting ${ignorePath}`.yellow);
