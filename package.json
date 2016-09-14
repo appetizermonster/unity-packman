@@ -1,6 +1,6 @@
 {
   "name": "unity-packman",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A tiny package dependency manager for Unity, powered by Github",
   "main": "index.js",
   "repository": {
@@ -9,6 +9,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "unity-packman": "./index.js"
+  },
+  "preferGlobal": true,
   "keywords": [
     "unity3d",
     "unity"
