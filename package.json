@@ -1,8 +1,11 @@
 {
   "name": "unity-packman",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A tiny package dependency manager for Unity, powered by Github",
   "main": "index.js",
+  "repository": {
+    "url": "https://github.com/appetizermonster/unity-packman.git"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
