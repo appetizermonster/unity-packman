@@ -1,6 +1,13 @@
 # unity-packman
 A tiny package dependency manager for Unity, powered by Github
 
+## Why package manager for Unity?
+I am working with many Unity projects, and most of them use somewhat shared packages.  
+but there was no clever way to support package dependencies for programmers yet. so I started this project.  
+
+with `unity-packman`, all package dependencies will be installed in `Assets/Plugins/packman-pkgs` folder.  
+you don't need to copy packages manually.
+
 ## Requirements
 - nodejs / npm
 - git
@@ -38,6 +45,10 @@ unity-packman gitignore
   ]
 }
 ```
+
+## TODO
+- `prune` command
+- specific commit/tag/branch support
 
 ## Example Packages
 - [appetizermonster/Unity3D-Co](https://github.com/appetizermonster/Unity3D-Co)
