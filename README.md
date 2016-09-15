@@ -12,15 +12,23 @@ you don't need to copy packages manually.
 - nodejs (>= 6.0.0) / npm
 - git
 
-## Usage
-- Basic Usage
+## Getting Started
+In your project directory (parent of Unity `Assets` folder).
 ```bash
 npm install -g unity-packman
+```
+
+Below command will create `packman.json` for your project.
+```bash
 unity-packman init
+```
+Then, now you can install dependency like this:
+```bash
 unity-packman install appetizermonster/Unity3D-Co
 ```
 
-- Install All Dependencies
+## Extra Commands
+- Install All Dependencies in `packman.json`
 ```bash
 unity-packman install
 ```
@@ -48,7 +56,7 @@ unity-packman gitignore
 
 ## TODO
 - `prune` command
-- specific commit/tag/branch support
+- proper commit/tag/branch support (installing, removing)
 
 ## Example Packages
 - [appetizermonster/Unity3D-Co](https://github.com/appetizermonster/Unity3D-Co)
