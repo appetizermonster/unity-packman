@@ -4,28 +4,30 @@ const co = require('co');
 const fs = require('fs');
 const fse = require('fs-extra');
 const path = require('path');
+const colors = require('colors'); // DO NOT REMOVE
 
 const gitUtil = require('./git-util');
 const jsonUtil = require('./json-util');
-const format = require('./format');
+const uriParser = require('./uri-parser');
 const env = require('./env');
 
-function* checkShouldUpdate(shortUri) {
-  const uniqueName = format.toUniqueName(shortUri);
-  const gitUri = format.toGitUri(shortUri);
-
-  const storagePath = path.join(env.PKG_STORAGE, uniqueName);
+function* checkShouldUpdate(repoInfo) {
+  const storagePath = path.join(env.PKG_STORAGE, repoInfo.name);
   const packmanObj = yield jsonUtil.readPackmanObj(storagePath);
   if (packmanObj === null)
     return true;
 
-  const localCommit = yield gitUtil.fetchLocalHeadCommit(storagePath);
-  console.log(`${shortUri}: local: ${localCommit}`.yellow);
+  const localCommit = yield gitUtil.fetchLocalHeadCommit(storagePath, repoInfo.ref);
+  console.log(`${repoInfo.name}: local: ${localCommit}`.yellow);
   if (localCommit === undefined)
     return true;
 
-  const remoteCommit = yield gitUtil.fetchHeadCommit(gitUri);
-  console.log(`${shortUri}: remote: ${remoteCommit}`.yellow);
+  // if targeting specific commit
+  if (repoInfo.commit)
+    return (localCommit !== repoInfo.commit);
+
+  const remoteCommit = yield gitUtil.fetchRemoteHeadCommit(repoInfo.git, repoInfo.ref);
+  console.log(`${repoInfo.name}: remote: ${remoteCommit}`.yellow);
   if (localCommit !== remoteCommit)
     return true;
   return false;
@@ -92,29 +94,39 @@ function* gitIgnore() {
   console.log('done'.green);
 }
 
-function* installDependencies(installedDependencies, dependencies) {
+function toGitUrlArray(deps) {
+  const urlArray = [];
+  for (const dep of deps) {
+    urlArray.push(uriParser.toRepoInfo(dep).git);
+  }
+  return urlArray;
+}
+
+function* installDependencies(installedDependencies, targetDependencies) {
   fse.ensureDirSync(env.PKG_STORAGE);
   fse.ensureDirSync(env.PKG_STAGE);
   fse.emptyDirSync(env.TEMP_STORAGE);
 
-  const doneDeps = [];
-  const waitingDeps = [].concat(dependencies);
+  const installedDepsGitUrls = toGitUrlArray(installedDependencies);
+  const depsGitUrls = toGitUrlArray(targetDependencies);
+  const waitingDeps = [].concat(targetDependencies);
   while (waitingDeps.length > 0) {
     const shortUri = waitingDeps.pop();
-    doneDeps.push(shortUri);
+    const repoInfo = uriParser.toRepoInfo(shortUri);
+    const tempRepoPath = path.join(env.TEMP_STORAGE, repoInfo.name);
 
-    const uniqueName = format.toUniqueName(shortUri);
-    const gitUri = format.toGitUri(shortUri);
-    const tempRepoPath = path.join(env.TEMP_STORAGE, uniqueName);
-
-    const isUpdatable = yield checkShouldUpdate(shortUri);
+    const isUpdatable = yield checkShouldUpdate(repoInfo);
     if (!isUpdatable) {
-      console.log(`no need to update: ${shortUri}`.green);
+      console.log(`no need to update: ${repoInfo.name}`.green);
       continue;
     }
 
-    console.log(`cloning ${gitUri}`);
-    yield gitUtil.cloneRepo(gitUri, tempRepoPath);
+    console.log(`cloning ${repoInfo.git}`);
+    yield gitUtil.clone(repoInfo.git, tempRepoPath);
+
+    // checkout to specific commit
+    if (repoInfo.checkoutTarget)
+      yield gitUtil.checkout(tempRepoPath, repoInfo.checkoutTarget);
 
     const packmanObj = yield jsonUtil.readPackmanObj(tempRepoPath);
     if (packmanObj === null) {
@@ -127,29 +139,31 @@ function* installDependencies(installedDependencies, dependencies) {
     if (deps) {
       console.log(`inspecting dependencies from ${shortUri}`);
       for (const dep of deps) {
-        if (installedDependencies.indexOf(dep) >= 0)
+        const depRepoInfo = uriParser.toRepoInfo(dep);
+        const depGit = depRepoInfo.git;
+        if (installedDepsGitUrls.indexOf(depGit) >= 0)
           continue;
-        if (doneDeps.indexOf(dep) >= 0 || waitingDeps.indexOf(dep) >= 0)
+        if (depsGitUrls.indexOf(dep) >= 0)
           continue;
-        if (dep === shortUri)
-          continue;
+
         console.log(`found dependency: ${dep}`.yellow);
         waitingDeps.push(dep);
+        depsGitUrls.push(depGit);
       }
     }
 
     const exportDir = packmanObj.export;
     if (!exportDir) {
-      console.log(`${shortUri} has no export directory`.red);
+      console.log(`${repoInfo.name} has no export directory`.red);
       continue;
     }
 
-    const storagePath = path.join(env.PKG_STORAGE, uniqueName);
+    const storagePath = path.join(env.PKG_STORAGE, repoInfo.name);
     fse.emptyDirSync(storagePath);
     fse.copySync(tempRepoPath, storagePath);
 
-    console.log(`copying to stage: ${shortUri}`);
-    const stagePath = path.join(env.PKG_STAGE, uniqueName);
+    console.log(`copying to stage: ${repoInfo.name}`);
+    const stagePath = path.join(env.PKG_STAGE, repoInfo.name);
     const exportPath = path.join(storagePath, exportDir);
     fse.emptyDirSync(stagePath);
     fse.copySync(exportPath, stagePath);
@@ -171,17 +185,17 @@ function* install(dependencies) {
   yield installDependencies(installedDependencies, dependencies);
 
   console.log('updating packman.json...'.yellow);
-  const storedDependencies = packmanObj.dependencies || [];
-  for (const dependency of dependencies) {
-    const contains = storedDependencies.indexOf(dependency) >= 0;
-    if (contains)
+  const newDependencies = [].concat(packmanObj.dependencies);
+  for (const dependency of newDependencies) {
+    const duplicated = newDependencies.indexOf(dependency) >= 0;
+    if (duplicated)
       continue;
-    storedDependencies.push(dependency);
+    newDependencies.push(dependency);
   }
-  storedDependencies.sort();
+  newDependencies.sort();
 
   // replace stored dependencies
-  packmanObj.dependencies = storedDependencies;
+  packmanObj.dependencies = newDependencies;
   jsonUtil.writePackmanObj('.', packmanObj);
 
   console.log('done'.cyan);
@@ -233,9 +247,9 @@ function* remove(dependencies) {
   console.log('removing dependencies...'.yellow);
 
   for (const shortUri of dependencies) {
-    const uniqueName = format.toUniqueName(shortUri);
-    const storagePath = path.join(env.PKG_STORAGE, uniqueName);
-    const stagePath = path.join(env.PKG_STAGE, uniqueName);
+    const repoInfo = uriParser.toRepoInfo(shortUri);
+    const storagePath = path.join(env.PKG_STORAGE, repoInfo.name);
+    const stagePath = path.join(env.PKG_STAGE, repoInfo.name);
 
     console.log(`removing ${shortUri}...`.yellow);
     fse.removeSync(storagePath);

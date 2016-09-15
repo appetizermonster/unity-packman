@@ -2,6 +2,7 @@
 
 'use strict';
 
+const colors = require('colors'); // DO NOT REMOVE
 const pkg = require('./package.json');
 const packman = require('./src');
 const program = require('commander').command('unity-packman');

@@ -4,10 +4,10 @@ const assert = require('assert');
 const Git = require('simple-git');
 const fse = require('fs-extra');
 
-function fetchHeadCommit(uri) {
+function fetchRemoteHeadCommit(uri, ref) {
   return new Promise((resolve, reject) => {
     const git = Git();
-    git.listRemote([uri, 'HEAD'], function(err, data) {
+    git.listRemote([uri, ref], function(err, data) {
       if (err)
         return reject(err);
       const result = data.split('\t');
@@ -18,18 +18,18 @@ function fetchHeadCommit(uri) {
   });
 }
 
-function fetchLocalHeadCommit(repo) {
+function fetchLocalHeadCommit(repo, ref) {
   return new Promise((resolve, reject) => {
     const git = Git(repo);
-    git.revparse(['HEAD'], function(err, data) {
+    git.revparse(['--verify', '-q', ref], function(err, data) {
       if (err)
         return reject(err);
-      return resolve(data.replace(/\r?\n/, ''));
+      return resolve(data.replace(/\r?\n/g, ''));
     });
   });
 }
 
-function cloneRepo(uri, dest) {
+function clone(uri, dest) {
   return new Promise((resolve, reject) => {
     fse.emptyDirSync(dest);
 
@@ -42,8 +42,20 @@ function cloneRepo(uri, dest) {
   });
 }
 
+function checkout(repo, target) {
+  return new Promise((resolve, reject) => {
+    const git = Git(repo);
+    git.checkout(target, function(err, data) {
+      if (err)
+        return reject(err);
+      return resolve();
+    });
+  });
+}
+
 module.exports = {
-  fetchHeadCommit,
+  fetchRemoteHeadCommit,
   fetchLocalHeadCommit,
-  cloneRepo
+  clone,
+  checkout
 };
