@@ -182,7 +182,7 @@ function* install(dependencies) {
 
   // replace stored dependencies
   packmanObj.dependencies = storedDependencies;
-  writePackmanObj('.', packmanObj);
+  jsonUtil.writePackmanObj('.', packmanObj);
 
   console.log('done'.cyan);
 }
@@ -228,7 +228,7 @@ function* remove(dependencies) {
 
   console.log('updating packman.json...'.yellow);
   packmanObj.dependencies = newDependencies;
-  writePackmanObj('.', packmanObj);
+  jsonUtil.writePackmanObj('.', packmanObj);
 
   console.log('removing dependencies...'.yellow);
 
