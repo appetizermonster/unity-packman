@@ -49,18 +49,37 @@ unity-packman gitignore
   "name": "Unity3D-Co",                           // Package Name
   "export": "Assets/Co",                          // Export Directory
   "dependencies": [
-    "appetizermonster/Unity3D-RecompileDisabler"  // Github Short URI
+    "appetizermonster/Unity3D-RecompileDisabler"  // Package URI
   ]
 }
 ```
 
+## Examples of Package URI
+- Default
+  ```javascript
+  appetizermonster/Unity3D-Co
+  ```
+- Specific Commit (with SHA1 Hash)
+  ```javascript
+  appetizermonster/Unity3D-Co?commit=6236ae6ed9e57de626b31e8d1c0957e074cf9331
+  ```
+- Specific Branch
+  ```javascript
+  appetizermonster/Unity3D-Co?branch=develop
+- Specific Tag
+  ```javascript
+  appetizermonster/Unity3D-Co?tag=v0.0.1
+  ```
+
 ## TODO
 - `prune` command
-- proper commit/tag/branch support (installing, removing)
 
 ## Example Packages
 - [appetizermonster/Unity3D-Co](https://github.com/appetizermonster/Unity3D-Co)
 - [appetizermonster/Unity3D-RecompileDisabler](https://github.com/appetizermonster/Unity3D-RecompileDisabler)
+
+## Contribution
+Any contributions are welcome!, Please open an issue!
 
 ## License
 MIT

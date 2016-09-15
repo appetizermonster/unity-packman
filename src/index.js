@@ -7,27 +7,27 @@ const path = require('path');
 const colors = require('colors'); // DO NOT REMOVE
 
 const gitUtil = require('./git-util');
-const jsonUtil = require('./json-util');
+const packmanJson = require('./packman-json');
 const uriParser = require('./uri-parser');
 const env = require('./env');
 
-function* checkShouldUpdate(repoInfo) {
-  const storagePath = path.join(env.PKG_STORAGE, repoInfo.name);
-  const packmanObj = yield jsonUtil.readPackmanObj(storagePath);
+function* checkShouldUpdate(pkgInfo) {
+  const storagePath = path.join(env.PKG_STORAGE, pkgInfo.name);
+  const packmanObj = yield packmanJson.readPackmanObj(storagePath);
   if (packmanObj === null)
     return true;
 
-  const localCommit = yield gitUtil.fetchLocalHeadCommit(storagePath, repoInfo.ref);
-  console.log(`${repoInfo.name}: local: ${localCommit}`.yellow);
+  const localCommit = yield gitUtil.fetchLocalHeadCommit(storagePath, pkgInfo.ref);
+  console.log(`${pkgInfo.name}: local: ${localCommit}`.yellow);
   if (localCommit === undefined)
     return true;
 
   // if targeting specific commit
-  if (repoInfo.commit)
-    return (localCommit !== repoInfo.commit);
+  if (pkgInfo.commit)
+    return (localCommit !== pkgInfo.commit);
 
-  const remoteCommit = yield gitUtil.fetchRemoteHeadCommit(repoInfo.git, repoInfo.ref);
-  console.log(`${repoInfo.name}: remote: ${remoteCommit}`.yellow);
+  const remoteCommit = yield gitUtil.fetchRemoteHeadCommit(pkgInfo.git, pkgInfo.ref);
+  console.log(`${pkgInfo.name}: remote: ${remoteCommit}`.yellow);
   if (localCommit !== remoteCommit)
     return true;
   return false;
@@ -94,76 +94,68 @@ function* gitIgnore() {
   console.log('done'.green);
 }
 
-function toGitUrlArray(deps) {
-  const urlArray = [];
-  for (const dep of deps) {
-    urlArray.push(uriParser.toRepoInfo(dep).git);
-  }
-  return urlArray;
-}
-
 function* installDependencies(installedDependencies, targetDependencies) {
   fse.ensureDirSync(env.PKG_STORAGE);
   fse.ensureDirSync(env.PKG_STAGE);
   fse.emptyDirSync(env.TEMP_STORAGE);
 
-  const installedDepsGitUrls = toGitUrlArray(installedDependencies);
-  const depsGitUrls = toGitUrlArray(targetDependencies);
+  const installedPkgNames = packmanJson.convertDependenciesToNames(installedDependencies);
+  const targetPkgNames = packmanJson.convertDependenciesToNames(targetDependencies);
   const waitingDeps = [].concat(targetDependencies);
   while (waitingDeps.length > 0) {
-    const shortUri = waitingDeps.pop();
-    const repoInfo = uriParser.toRepoInfo(shortUri);
-    const tempRepoPath = path.join(env.TEMP_STORAGE, repoInfo.name);
+    const pkgUri = waitingDeps.pop();
+    const pkgInfo = uriParser.toPkgInfo(pkgUri);
+    const tempRepoPath = path.join(env.TEMP_STORAGE, pkgInfo.name);
 
-    const isUpdatable = yield checkShouldUpdate(repoInfo);
+    const isUpdatable = yield checkShouldUpdate(pkgInfo);
     if (!isUpdatable) {
-      console.log(`no need to update: ${repoInfo.name}`.green);
+      console.log(`no need to update: ${pkgInfo.name}`.green);
       continue;
     }
 
-    console.log(`cloning ${repoInfo.git}`);
-    yield gitUtil.clone(repoInfo.git, tempRepoPath);
+    console.log(`cloning ${pkgInfo.git}`);
+    yield gitUtil.clone(pkgInfo.git, tempRepoPath);
 
     // checkout to specific commit
-    if (repoInfo.checkoutTarget)
-      yield gitUtil.checkout(tempRepoPath, repoInfo.checkoutTarget);
+    if (pkgInfo.checkoutTarget)
+      yield gitUtil.checkout(tempRepoPath, pkgInfo.checkoutTarget);
 
-    const packmanObj = yield jsonUtil.readPackmanObj(tempRepoPath);
+    const packmanObj = yield packmanJson.readPackmanObj(tempRepoPath);
     if (packmanObj === null) {
-      console.log(`${shortUri} has no packman file`.red);
+      console.log(`${pkgInfo.name} has no packman file`.red);
       continue;
     }
 
     // inspecting another dependencies
     const deps = packmanObj.dependencies;
     if (deps) {
-      console.log(`inspecting dependencies from ${shortUri}`);
-      for (const dep of deps) {
-        const depRepoInfo = uriParser.toRepoInfo(dep);
-        const depGit = depRepoInfo.git;
-        if (installedDepsGitUrls.indexOf(depGit) >= 0)
+      console.log(`inspecting dependencies from ${pkgInfo.name}`);
+      for (const depPkgUri of deps) {
+        const depPkgInfo = uriParser.toPkgInfo(depPkgUri);
+        const depName = depPkgInfo.name;
+        if (installedPkgNames.indexOf(depName) >= 0)
           continue;
-        if (depsGitUrls.indexOf(dep) >= 0)
+        if (targetPkgNames.indexOf(depName) >= 0)
           continue;
 
-        console.log(`found dependency: ${dep}`.yellow);
-        waitingDeps.push(dep);
-        depsGitUrls.push(depGit);
+        console.log(`found dependency: ${depName}`.yellow);
+        waitingDeps.push(depPkgUri);
+        targetPkgNames.push(depName);
       }
     }
 
     const exportDir = packmanObj.export;
     if (!exportDir) {
-      console.log(`${repoInfo.name} has no export directory`.red);
+      console.log(`${pkgInfo.name} has no export directory`.red);
       continue;
     }
 
-    const storagePath = path.join(env.PKG_STORAGE, repoInfo.name);
+    const storagePath = path.join(env.PKG_STORAGE, pkgInfo.name);
     fse.emptyDirSync(storagePath);
     fse.copySync(tempRepoPath, storagePath);
 
-    console.log(`copying to stage: ${repoInfo.name}`);
-    const stagePath = path.join(env.PKG_STAGE, repoInfo.name);
+    console.log(`copying to stage: ${pkgInfo.name}`);
+    const stagePath = path.join(env.PKG_STAGE, pkgInfo.name);
     const exportPath = path.join(storagePath, exportDir);
     fse.emptyDirSync(stagePath);
     fse.copySync(exportPath, stagePath);
@@ -173,8 +165,8 @@ function* installDependencies(installedDependencies, targetDependencies) {
   fse.removeSync(env.TEMP_STORAGE);
 }
 
-function* install(dependencies) {
-  const packmanObj = yield jsonUtil.readPackmanObj('.');
+function* install(targetDependencies) {
+  const packmanObj = yield packmanJson.readPackmanObj('.');
   if (packmanObj === null) {
     console.log('no packman file'.red);
     return;
@@ -182,27 +174,23 @@ function* install(dependencies) {
 
   console.log('installing dependencies...\n');
   const installedDependencies = packmanObj.dependencies || [];
-  yield installDependencies(installedDependencies, dependencies);
+  yield installDependencies(installedDependencies, targetDependencies);
 
   console.log('updating packman.json...'.yellow);
-  const newDependencies = [].concat(packmanObj.dependencies);
-  for (const dependency of newDependencies) {
-    const duplicated = newDependencies.indexOf(dependency) >= 0;
-    if (duplicated)
-      continue;
-    newDependencies.push(dependency);
-  }
+
+  let newDependencies = [].concat(packmanObj.dependencies).concat(targetDependencies);
+  newDependencies = packmanJson.makeDependenciesUnique(newDependencies);
   newDependencies.sort();
 
   // replace stored dependencies
   packmanObj.dependencies = newDependencies;
-  jsonUtil.writePackmanObj('.', packmanObj);
+  packmanJson.writePackmanObj('.', packmanObj);
 
   console.log('done'.cyan);
 }
 
 function* installAll() {
-  const packmanObj = yield jsonUtil.readPackmanObj('.');
+  const packmanObj = yield packmanJson.readPackmanObj('.');
   if (packmanObj === null) {
     console.log('no packman file'.red);
     return;
@@ -219,39 +207,35 @@ function* installAll() {
   console.log('done'.cyan);
 }
 
-function* remove(dependencies) {
-  if (!dependencies || dependencies.length === 0) {
-    console.log('please specify dependencies to remove'.red);
+function* remove(targetDependencies) {
+  if (!targetDependencies || targetDependencies.length === 0) {
+    console.log('please specify target dependencies to remove'.red);
     return;
   }
 
-  const packmanObj = yield jsonUtil.readPackmanObj('.');
+  const packmanObj = yield packmanJson.readPackmanObj('.');
   if (packmanObj === null) {
     console.log('no packman file'.red);
     return;
   }
 
-  const storedDependencies = packmanObj.dependencies;
-  const newDependencies = [];
-  for (const dependency of storedDependencies) {
-    const shouldRemove = dependencies.indexOf(dependency) >= 0;
-    if (shouldRemove)
-      continue;
-    newDependencies.push(dependency);
-  }
-
   console.log('updating packman.json...'.yellow);
+
+  const oldDependencies = [].concat(packmanObj.dependencies);
+  const newDependencies = packmanJson.removeDependencies(oldDependencies, targetDependencies);
+  newDependencies.sort();
+
   packmanObj.dependencies = newDependencies;
-  jsonUtil.writePackmanObj('.', packmanObj);
+  packmanJson.writePackmanObj('.', packmanObj);
 
   console.log('removing dependencies...'.yellow);
 
-  for (const shortUri of dependencies) {
-    const repoInfo = uriParser.toRepoInfo(shortUri);
-    const storagePath = path.join(env.PKG_STORAGE, repoInfo.name);
-    const stagePath = path.join(env.PKG_STAGE, repoInfo.name);
+  for (const pkgUri of targetDependencies) {
+    const pkgInfo = uriParser.toPkgInfo(pkgUri);
+    const storagePath = path.join(env.PKG_STORAGE, pkgInfo.name);
+    const stagePath = path.join(env.PKG_STAGE, pkgInfo.name);
 
-    console.log(`removing ${shortUri}...`.yellow);
+    console.log(`removing ${pkgInfo.name}...`.yellow);
     fse.removeSync(storagePath);
     fse.removeSync(stagePath);
   }

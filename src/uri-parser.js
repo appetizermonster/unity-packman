@@ -1,10 +1,10 @@
 'use strict';
 
-function toRepoInfo(shortUri) {
+function toPkgInfo(pkgUri) {
   const regex = /^([^\/\s]+)\/([^?\s]+)\??(commit=[A-Za-z0-9]+)?(branch=\S+)?(tag=\S+)?/;
-  const parsed = regex.exec(shortUri);
+  const parsed = regex.exec(pkgUri);
   if (parsed === null)
-    throw new Error(`Uri has wrong format: ${shortUri}`);
+    throw new Error(`Uri has wrong format: ${pkgUri}`);
 
   const user = parsed[1];
   const repo = parsed[2];
@@ -13,8 +13,9 @@ function toRepoInfo(shortUri) {
   const tag = parsed[5];
 
   const result = {
-    uri: shortUri,
-    name: repo,
+    uri: pkgUri,
+    basename: `${user}/${repo}`,
+    name: `${user}.${repo}`,
     git: `https://github.com/${user}/${repo}.git`,
     tag: null,
     branch: null,
@@ -43,5 +44,5 @@ function toRepoInfo(shortUri) {
 }
 
 module.exports = {
-  toRepoInfo
+  toPkgInfo
 };
