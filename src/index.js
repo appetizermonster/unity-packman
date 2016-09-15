@@ -110,7 +110,7 @@ function* gitIgnore() {
   console.log('done'.green);
 }
 
-function* installDependencies(dependencies) {
+function* installDependencies(installedDependencies, dependencies) {
   fse.ensureDirSync(env.PKG_STORAGE);
   fse.ensureDirSync(env.PKG_STAGE);  
   fse.emptyDirSync(env.TEMP_STORAGE);
@@ -145,6 +145,8 @@ function* installDependencies(dependencies) {
     if (deps) {
       console.log(`inspecting dependencies from ${shortUri}`);
       for (const dep of deps) {
+        if (installedDependencies.indexOf(dep) >= 0)
+          continue;
         if (doneDeps.indexOf(dep) >= 0 || waitingDeps.indexOf(dep) >= 0)
           continue;
         if (dep === shortUri)
@@ -183,7 +185,8 @@ function* install(dependencies) {
   }
   
   console.log('installing dependencies...\n');
-  yield installDependencies(dependencies);
+  const installedDependencies = packmanObj.dependencies || [];
+  yield installDependencies(installedDependencies, dependencies);
   
   console.log('updating packman.json...'.yellow);
   const storedDependencies = packmanObj.dependencies || [];
@@ -216,7 +219,7 @@ function* installAll() {
     return;
   }
   
-  yield installDependencies(dependencies);
+  yield installDependencies(dependencies, dependencies);
   console.log('done'.cyan);
 }
 
