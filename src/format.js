@@ -1,7 +1,7 @@
 'use strict';
 
 function toGitUri(shortUri) {
-  return `https://github.com/${shortUri}.git`; 
+  return `https://github.com/${shortUri}.git`;
 }
 
 function toUniqueName(shortUri) {
@@ -9,5 +9,6 @@ function toUniqueName(shortUri) {
 }
 
 module.exports = {
-  toGitUri, toUniqueName
+  toGitUri,
+  toUniqueName
 };

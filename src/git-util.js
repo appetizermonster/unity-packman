@@ -7,7 +7,7 @@ const fse = require('fs-extra');
 function fetchHeadCommit(uri) {
   return new Promise((resolve, reject) => {
     const git = Git();
-    git.listRemote([uri, 'HEAD'], function (err, data) {
+    git.listRemote([uri, 'HEAD'], function(err, data) {
       if (err)
         return reject(err);
       const result = data.split('\t');
@@ -21,7 +21,7 @@ function fetchHeadCommit(uri) {
 function fetchLocalHeadCommit(repo) {
   return new Promise((resolve, reject) => {
     const git = Git(repo);
-    git.revparse(['HEAD'], function (err, data) {
+    git.revparse(['HEAD'], function(err, data) {
       if (err)
         return reject(err);
       return resolve(data.replace(/\r?\n/, ''));
@@ -32,9 +32,9 @@ function fetchLocalHeadCommit(repo) {
 function cloneRepo(uri, dest) {
   return new Promise((resolve, reject) => {
     fse.emptyDirSync(dest);
-    
+
     const git = Git();
-    git.clone(uri, dest, function (err, data) {
+    git.clone(uri, dest, function(err, data) {
       if (err)
         return reject(err);
       return resolve();
@@ -42,4 +42,8 @@ function cloneRepo(uri, dest) {
   });
 }
 
-module.exports = { fetchHeadCommit, fetchLocalHeadCommit, cloneRepo };
+module.exports = {
+  fetchHeadCommit,
+  fetchLocalHeadCommit,
+  cloneRepo
+};

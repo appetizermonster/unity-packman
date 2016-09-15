@@ -1,0 +1,7 @@
+{
+  "extends": "google",
+  "rules": {
+    "new-cap": "warn",
+    "generator-star-spacing": ["error", { "before": false, "after": true }]
+  }
+}

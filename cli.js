@@ -1,39 +1,40 @@
 #!/usr/bin/env node
+
 'use strict';
 
 const pkg = require('./package.json');
 const packman = require('./src');
-const program = require('commander');
+const program = require('commander').command('unity-packman');
 
 console.log(`- unity-packman ${pkg.version}`.bold);
 
 program
   .command('init')
   .description('create packman.json')
-  .action(function () {
+  .action(function() {
     packman.init().catch(console.error);
   });
 
 program
   .command('gitignore')
   .description('update .gitignore')
-  .action(function () {
+  .action(function() {
     packman.gitIgnore().catch(console.error);
   });
 
 program
   .command('install [repo...]')
   .description('install dependencies')
-  .action(function (repos) {
+  .action(function(repos) {
     if (!repos || repos.length === 0)
       return packman.installAll().catch(console.error);
     return packman.install(repos).catch(console.error);
   });
-  
+
 program
   .command('remove [repo...]')
   .description('remove dependencies')
-  .action(function (repos) {
+  .action(function(repos) {
     packman.remove(repos).catch(console.error);
   });
 
