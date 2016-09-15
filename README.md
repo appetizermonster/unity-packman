@@ -57,25 +57,25 @@ unity-packman gitignore
 ## Examples of Package URI
 - Default
   
-  ```javascript
+  ```
   appetizermonster/Unity3D-Co
   ```
 
 - Specific Commit (with SHA1 Hash)
   
-  ```javascript
+  ```
   appetizermonster/Unity3D-Co?commit=6236ae6ed9e57de626b31e8d1c0957e074cf9331
   ```
 
 - Specific Branch
   
-  ```javascript
+  ```
   appetizermonster/Unity3D-Co?branch=develop
   ```
 
 - Specific Tag
 
-  ```javascript
+  ```
   appetizermonster/Unity3D-Co?tag=v0.0.1
   ```
 
