@@ -27,9 +27,7 @@ program
   .command('install [repo...]')
   .description('install dependencies')
   .action(function(repos) {
-    if (!repos || repos.length === 0)
-      return packman.installAll().catch(console.error);
-    return packman.install(repos).catch(console.error);
+    packman.install(repos).catch(console.error);
   });
 
 program
@@ -37,6 +35,13 @@ program
   .description('remove dependencies')
   .action(function(repos) {
     packman.remove(repos).catch(console.error);
+  });
+
+program
+  .command('shrinkwrap')
+  .description('lock down dependencies commit')
+  .action(function(repos) {
+    packman.shrinkwrap().catch(console.error);
   });
 
 program.parse(process.argv);

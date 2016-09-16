@@ -1,0 +1,7 @@
+{
+  "name": "unity-packman",
+  "dependencies": [
+    "appetizermonster/Unity3D-QuickSearch",
+    "appetizermonster/Unity3D-RecompileDisabler"
+  ]
+}
