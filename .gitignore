@@ -1,3 +1,9 @@
 node_modules/
 packman-pkgs/
 .packman/
+
+# test files
+Assets/
+.packman/
+packman.json
+npm-debug.log.*
