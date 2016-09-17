@@ -10,12 +10,12 @@ const packmanJson = require('../packman-json');
 const uriParser = require('../uri-parser');
 
 function* checkShouldUpdate(pkgInfo) {
-  const storagePath = path.join(env.PKG_STORAGE, pkgInfo.name);
-  const packmanObj = yield packmanJson.readPackmanObj(storagePath);
+  const repoPath = path.join(env.PKG_REPO, pkgInfo.name);
+  const packmanObj = yield packmanJson.readPackmanObj(repoPath);
   if (packmanObj === null)
     return true;
 
-  const localCommit = yield gitUtil.fetchLocalHeadCommit(storagePath, pkgInfo.ref);
+  const localCommit = yield gitUtil.fetchLocalHeadCommit(repoPath, pkgInfo.ref);
   console.log(`${pkgInfo.name}: local: ${localCommit}`.yellow);
   if (localCommit === undefined)
     return true;
@@ -32,7 +32,7 @@ function* checkShouldUpdate(pkgInfo) {
 }
 
 function* installDependencies(installedDependencies, targetDependencies) {
-  fse.ensureDirSync(env.PKG_STORAGE);
+  fse.ensureDirSync(env.PKG_REPO);
   fse.ensureDirSync(env.PKG_STAGE);
   fse.emptyDirSync(env.TEMP_STORAGE);
 
@@ -87,13 +87,13 @@ function* installDependencies(installedDependencies, targetDependencies) {
       continue;
     }
 
-    const storagePath = path.join(env.PKG_STORAGE, pkgInfo.name);
-    fse.emptyDirSync(storagePath);
-    fse.copySync(tempRepoPath, storagePath);
+    const repoPath = path.join(env.PKG_REPO, pkgInfo.name);
+    fse.emptyDirSync(repoPath);
+    fse.copySync(tempRepoPath, repoPath);
 
     console.log(`copying to stage: ${pkgInfo.name}`);
     const stagePath = path.join(env.PKG_STAGE, pkgInfo.name);
-    const exportPath = path.join(storagePath, exportDir);
+    const exportPath = path.join(repoPath, exportDir);
     fse.emptyDirSync(stagePath);
     fse.copySync(exportPath, stagePath);
     console.log('complete'.green);
@@ -144,9 +144,9 @@ function* installAll() {
   console.log('done'.cyan);
 }
 
-module.exports = function* (repos) {
-  if (repos && repos.length > 0) {
-    yield install(repos);
+module.exports = function* (pkgs) {
+  if (pkgs && pkgs.length > 0) {
+    yield install(pkgs);
     return;
   }
   yield installAll();

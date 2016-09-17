@@ -24,24 +24,24 @@ program
   });
 
 program
-  .command('install [repo...]')
+  .command('install [pkgs...]')
   .description('install dependencies')
-  .action(function(repos) {
-    packman.install(repos).catch(console.error);
+  .action(function(pkgs) {
+    packman.install(pkgs).catch(console.error);
   });
 
 program
-  .command('remove [repo...]')
+  .command('remove [pkgs...]')
   .description('remove dependencies')
-  .action(function(repos) {
-    packman.remove(repos).catch(console.error);
+  .action(function(pkgs) {
+    packman.remove(pkgs).catch(console.error);
   });
 
 program
-  .command('shrinkwrap')
-  .description('lock down dependencies commit')
-  .action(function(repos) {
-    packman.shrinkwrap().catch(console.error);
+  .command('copyback [pkg]')
+  .description('copy modified assets back into repository')
+  .action(function(pkg) {
+    packman.copyback(pkg).catch(console.error);
   });
 
 program.parse(process.argv);
