@@ -43,6 +43,11 @@ unity-packman remove appetizermonster/Unity3D-Co
 unity-packman gitignore
 ```
 
+- Copy modified assets back into repository directory (to commit changes)
+```bash
+unity-packman copyback appetizermonster/Unity3D-Co
+```
+
 ## Structure of `packman.json`
 ```javascript
 {
