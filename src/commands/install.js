@@ -115,7 +115,7 @@ function* install(targetDependencies) {
 
   console.log('updating packman.json...'.yellow);
 
-  let newDependencies = [].concat(packmanObj.dependencies).concat(targetDependencies);
+  let newDependencies = [].concat(packmanObj.dependencies).concat(targetDependencies).filter(function(e){return e});
   newDependencies = packmanJson.makeDependenciesUnique(newDependencies);
   newDependencies.sort();
 
