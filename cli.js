@@ -31,6 +31,20 @@ program
   });
 
 program
+  .command('open [pkg]')
+  .description('opens the package root in Unity as a project.')
+  .action(function(pkg) {
+    packman.open(pkg).catch(console.error);
+  });
+
+program
+  .command('config [key] [value]')
+  .description('see and set global configuration options.')
+  .action(function(key, value) {
+    packman.config(key, value).catch(console.error);
+  });
+
+program
   .command('remove [pkgs...]')
   .description('remove dependencies')
   .action(function(pkgs) {

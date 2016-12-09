@@ -20,6 +20,8 @@ function toPkgInfo(pkgUri) {
     tag: null,
     branch: null,
     commit: null,
+    repo: `${repo}`,
+    user: `${user}`,
     ref: 'HEAD',
     checkoutTarget: null
   };

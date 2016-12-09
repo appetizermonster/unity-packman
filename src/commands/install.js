@@ -2,34 +2,15 @@
 
 const colors = require('colors');
 const fse = require('fs-extra');
+const fs = require('fs');
 const path = require('path');
 
 const env = require('../env');
 const gitUtil = require('../git-util');
+const localUtil = require('../local-util');
 const packmanJson = require('../packman-json');
 const uriParser = require('../uri-parser');
-
-function* checkShouldUpdate(pkgInfo) {
-  const repoPath = path.join(env.PKG_REPO, pkgInfo.name);
-  const packmanObj = yield packmanJson.readPackmanObj(repoPath);
-  if (packmanObj === null)
-    return true;
-
-  const localCommit = yield gitUtil.fetchLocalHeadCommit(repoPath, pkgInfo.ref);
-  console.log(`${pkgInfo.name}: local: ${localCommit}`.yellow);
-  if (localCommit === undefined)
-    return true;
-
-  // if targeting specific commit
-  if (pkgInfo.commit)
-    return (localCommit !== pkgInfo.commit);
-
-  const remoteCommit = yield gitUtil.fetchRemoteHeadCommit(pkgInfo.git, pkgInfo.ref);
-  console.log(`${pkgInfo.name}: remote: ${remoteCommit}`.yellow);
-  if (localCommit !== remoteCommit)
-    return true;
-  return false;
-}
+const globalConfig = require('../global-config');
 
 function* installDependencies(installedDependencies, targetDependencies) {
   fse.ensureDirSync(env.PKG_REPO);
@@ -44,18 +25,31 @@ function* installDependencies(installedDependencies, targetDependencies) {
     const pkgInfo = uriParser.toPkgInfo(pkgUri);
     const tempRepoPath = path.join(env.TEMP_STORAGE, pkgInfo.name);
 
-    const isUpdatable = yield checkShouldUpdate(pkgInfo);
-    if (!isUpdatable) {
-      console.log(`no need to update: ${pkgInfo.name}`.green);
-      continue;
+    // localRepo is defined and path exists
+    if(pkgInfo.user === 'local') { // globalConfig.localRepo && fs.existsSync(`${globalConfig.localRepo}/${pkgInfo.repo}`)) {
+      const isUpdatable = yield localUtil.checkShouldUpdate(pkgInfo);
+      if (!isUpdatable) {
+        console.log(`no need to update: ${pkgInfo.name}`.green);
+        continue;
+      }
+      const path = localUtil.path(pkgInfo);
+      yield localUtil.clone(path, tempRepoPath);
     }
+    // git repo
+    else {
+      const isUpdatable = yield gitUtil.checkShouldUpdate(pkgInfo);
+      if (!isUpdatable) {
+        console.log(`no need to update: ${pkgInfo.name}`.green);
+        continue;
+      }
 
-    console.log(`cloning ${pkgInfo.git}`);
-    yield gitUtil.clone(pkgInfo.git, tempRepoPath);
+      console.log(`cloning ${pkgInfo.git}`);
+      yield gitUtil.clone(pkgInfo.git, tempRepoPath);
 
-    // checkout to specific commit
-    if (pkgInfo.checkoutTarget)
-      yield gitUtil.checkout(tempRepoPath, pkgInfo.checkoutTarget);
+      // checkout to specific commit
+      if (pkgInfo.checkoutTarget)
+        yield gitUtil.checkout(tempRepoPath, pkgInfo.checkoutTarget);
+    }
 
     const packmanObj = yield packmanJson.readPackmanObj(tempRepoPath);
     if (packmanObj === null) {
@@ -92,7 +86,7 @@ function* installDependencies(installedDependencies, targetDependencies) {
     fse.copySync(tempRepoPath, repoPath);
 
     console.log(`copying to stage: ${pkgInfo.name}`);
-    const stagePath = path.join(env.PKG_STAGE, pkgInfo.name);
+    const stagePath = path.join(env.PKG_STAGE, packmanObj.name);
     const exportPath = path.join(repoPath, exportDir);
     fse.emptyDirSync(stagePath);
     fse.copySync(exportPath, stagePath);
@@ -142,6 +136,11 @@ function* installAll() {
 
   yield installDependencies(dependencies, dependencies);
   console.log('done'.cyan);
+}
+
+function* installLocal(from, to) {
+  console.log(`copying ${from} to ${to}`);
+  yield localUtil.clone(from, to);
 }
 
 module.exports = function* (pkgs) {
