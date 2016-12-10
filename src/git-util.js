@@ -13,7 +13,7 @@ function* checkShouldUpdate(pkgInfo) {
   if (packmanObj === null)
     return true;
 
-  const localCommit = yield gitUtil.fetchLocalHeadCommit(repoPath, pkgInfo.ref);
+  const localCommit = yield fetchLocalHeadCommit(repoPath, pkgInfo.ref);
   console.log(`${pkgInfo.name}: local: ${localCommit}`.yellow);
   if (localCommit === undefined)
     return true;
@@ -22,7 +22,7 @@ function* checkShouldUpdate(pkgInfo) {
   if (pkgInfo.commit)
     return (localCommit !== pkgInfo.commit);
 
-  const remoteCommit = yield gitUtil.fetchRemoteHeadCommit(pkgInfo.git, pkgInfo.ref);
+  const remoteCommit = yield fetchRemoteHeadCommit(pkgInfo.git, pkgInfo.ref);
   console.log(`${pkgInfo.name}: remote: ${remoteCommit}`.yellow);
   if (localCommit !== remoteCommit)
     return true;
