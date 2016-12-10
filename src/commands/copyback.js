@@ -3,6 +3,8 @@
 const colors = require('colors');
 const fse = require('fs-extra');
 const path = require('path');
+const globalConfig = require('../global-config');
+const localUtil = require('../local-util');
 
 const env = require('../env');
 const packmanJson = require('../packman-json');
@@ -24,12 +26,18 @@ module.exports = function* (pkg) {
   }
 
   const exportPath = path.join(repoPath, packmanObj.export);
-  const stagePath = path.join(env.PKG_STAGE, pkgInfo.name);
+  const stagePath = path.join(env.PKG_STAGE, pkgInfo.user === 'local' ? pkgInfo.repo : pkgInfo.name);
 
   console.log(`copying ${pkgInfo.name} back...`.yellow);
 
   fse.removeSync(exportPath);
   fse.copySync(stagePath, exportPath);
+
+  if(pkgInfo.user === 'local') {
+    const localExportPath = path.join(localUtil.path(pkgInfo), packmanObj.export);
+    fse.removeSync(localExportPath);
+    fse.copySync(exportPath, localExportPath)
+  }
 
   console.log('done'.green);
 };
