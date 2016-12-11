@@ -21,7 +21,7 @@ function* copybackProject(pkg, remaining = null, addDependencies = null) {
   }
 
   const exportPath = path.join(repoPath, packmanObj.export).normalize();
-  const stagePath = path.join(env.PKG_STAGE, pkgInfo.name).normalize();
+  const stagePath = packmanJson.resolveStaging(pkgInfo, packmanObj).normalize();
 
   console.log(`copying ${pkgInfo.name} back from ${stagePath} to ${exportPath}...`.green);
 

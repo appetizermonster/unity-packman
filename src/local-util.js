@@ -6,6 +6,7 @@ const jspath = require('path');
 const globalConfig = require('./global-config');
 
 function* checkShouldUpdate(pkgInfo) {
+  // TODO: This should compare directories to determine if out of sync
   return true;
 }
 
@@ -27,8 +28,8 @@ function path(pkgInfo) {
     return jspath.join(globalConfig.localRepo, pkgInfo.repo)
   }
 
-  if (fs.existsSync(jspath.join(process.env.cwd(), pkgInfo.repo))) {
-    return jspath.join(process.env.cwd(), pkgInfo.repo);
+  if (fs.existsSync(jspath.join(process.cwd(), pkgInfo.repo))) {
+    return jspath.join(process.cwd(), pkgInfo.repo);
   }
 
   if (fs.existsSync(pkgInfo.repo)) {

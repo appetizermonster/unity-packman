@@ -34,7 +34,7 @@ module.exports = function* (pkgs) {
   for (const pkgUri of pkgs) {
     const pkgInfo = uriParser.toPkgInfo(pkgUri);
     const repoPath = path.join(env.PKG_REPO, pkgInfo.name);
-    const stagePath = path.join(env.PKG_STAGE, pkgInfo.name);
+    const stagePath = packmanJson.resolveStaging(pkgInfo, packmanObj);
 
     console.log(`removing ${pkgInfo.name}...`.yellow);
     fse.removeSync(repoPath);

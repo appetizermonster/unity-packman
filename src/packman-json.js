@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const env = require('./env');
 const fse = require('fs-extra');
 
 const uriParser = require('./uri-parser');
@@ -69,11 +70,20 @@ function removeDependencies(srcDependencies, removalDependencies) {
   return result;
 }
 
+function resolveStaging(pkgInfo, pkgJson) {
+  if(pkgJson.stageTo) {
+    return path.resolve(env.ASSETS_ROOT, pkgJson.stageTo).normalize();
+  } else {
+    return path.resolve(env.PKG_STAGE, pkgInfo.name);
+  }
+}
+
 module.exports = {
   readJson,
   readPackmanObj,
   writePackmanObj,
   makeDependenciesUnique,
   convertDependenciesToNames,
-  removeDependencies
+  removeDependencies,
+  resolveStaging
 };

@@ -86,7 +86,7 @@ function* installDependencies(installedDependencies, targetDependencies) {
     fse.copySync(tempRepoPath, repoPath);
 
     console.log(`copying to stage: ${pkgInfo.name}`);
-    const stagePath = path.join(env.PKG_STAGE, pkgInfo.name);
+    const stagePath = packmanJson.resolveStaging(pkgInfo, packmanObj);
     const exportPath = path.join(repoPath, exportDir);
     fse.emptyDirSync(stagePath);
     fse.copySync(exportPath, stagePath);
