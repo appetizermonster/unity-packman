@@ -26,7 +26,7 @@ function* installDependencies(installedDependencies, targetDependencies) {
     const tempRepoPath = path.join(env.TEMP_STORAGE, pkgInfo.name);
 
     // localRepo is defined and path exists
-    if(pkgInfo.user === 'local') { // globalConfig.localRepo && fs.existsSync(`${globalConfig.localRepo}/${pkgInfo.repo}`)) {
+    if(pkgInfo.user === 'local') {
       const isUpdatable = yield localUtil.checkShouldUpdate(pkgInfo);
       if (!isUpdatable) {
         console.log(`no need to update: ${pkgInfo.name}`.green);
@@ -86,7 +86,7 @@ function* installDependencies(installedDependencies, targetDependencies) {
     fse.copySync(tempRepoPath, repoPath);
 
     console.log(`copying to stage: ${pkgInfo.name}`);
-    const stagePath = path.join(env.PKG_STAGE, packmanObj.name);
+    const stagePath = path.join(env.PKG_STAGE, pkgInfo.name);
     const exportPath = path.join(repoPath, exportDir);
     fse.emptyDirSync(stagePath);
     fse.copySync(exportPath, stagePath);

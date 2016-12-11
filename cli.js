@@ -53,9 +53,11 @@ program
 
 program
   .command('copyback [pkg]')
+  .option('-a. --all', 'Call copyback logic on the dependency graph')
+  .option('-d, --direct', 'Call copyback on all packages directly dependended upon')
   .description('copy modified assets back into repository')
-  .action(function(pkg) {
-    packman.copyback(pkg).catch(console.error);
+  .action(function(pkg, options) {
+    packman.copyback(pkg, options).catch(console.error);
   });
 
 program.parse(process.argv);
