@@ -8,12 +8,17 @@ const env = require('../env');
 const packmanJson = require('../packman-json');
 const uriParser = require('../uri-parser');
 
-module.exports = function* (pkgs) {
+module.exports = function*(pkgs, options) {
+  if (!options) {
+    options = {};
+  }
+
   if (!pkgs || pkgs.length === 0) {
     console.log('please specify target packages to remove'.red);
     return;
   }
 
+  const isDev = options.dev;
   const packmanObj = yield packmanJson.readPackmanObj('.');
   if (packmanObj === null) {
     console.log('no packman file'.red);
@@ -22,21 +27,25 @@ module.exports = function* (pkgs) {
 
   console.log('updating packman.json...'.yellow);
 
-  const oldDependencies = [].concat(packmanObj.dependencies);
+  const oldDependencies = [].concat(isDev ? packmanObj.devDependencies : packmanObj.dependencies);
   const newDependencies = packmanJson.removeDependencies(oldDependencies, pkgs);
   newDependencies.sort();
 
-  packmanObj.dependencies = newDependencies;
+  if (isDev) {
+    packmanObj.devDependencies = newDependencies;
+  } else {
+    packmanObj.dependencies = newDependencies;
+  }
   packmanJson.writePackmanObj('.', packmanObj);
 
-  console.log('removing dependencies...'.yellow);
+  console.log(`removing ${isDev ? 'dev ' : ''}dependencies...`.yellow);
 
   for (const pkgUri of pkgs) {
     const pkgInfo = uriParser.toPkgInfo(pkgUri);
     const repoPath = path.join(env.PKG_REPO, pkgInfo.name);
     const stagePath = packmanJson.resolveStaging(pkgInfo, packmanObj);
 
-    console.log(`removing ${pkgInfo.name}...`.yellow);
+    console.log(`removing ${pkgInfo.name} ${isDev ? 'dev ' : ''}dependency...`.yellow);
     fse.removeSync(repoPath);
     fse.removeSync(stagePath);
   }

@@ -26,7 +26,7 @@ function* installDependencies(installedDependencies, targetDependencies) {
     const tempRepoPath = path.join(env.TEMP_STORAGE, pkgInfo.name);
 
     // localRepo is defined and path exists
-    if(pkgInfo.user === 'local') {
+    if (pkgInfo.user === 'local') {
       const isUpdatable = yield localUtil.checkShouldUpdate(pkgInfo);
       if (!isUpdatable) {
         console.log(`no need to update: ${pkgInfo.name}`.green);
@@ -96,31 +96,43 @@ function* installDependencies(installedDependencies, targetDependencies) {
   fse.removeSync(env.TEMP_STORAGE);
 }
 
-function* install(targetDependencies) {
+function* install(targetDependencies, options) {
+  options = options || {};
+
+  const isDev = options.dev;
   const packmanObj = yield packmanJson.readPackmanObj('.');
   if (packmanObj === null) {
     console.log('no packman file'.red);
     return;
   }
 
-  console.log('installing dependencies...\n');
-  const installedDependencies = packmanObj.dependencies || [];
+  console.log(`installing ${isDev ? 'dev ' : ''}dependencies...\n`);
+  let dependencies = (isDev ? packmanObj.devDependencies : packmanObj.dependencies) || [];
+  const installedDependencies = dependencies;
   yield installDependencies(installedDependencies, targetDependencies);
 
   console.log('updating packman.json...'.yellow);
-
-  let newDependencies = [].concat(packmanObj.dependencies).concat(targetDependencies).filter(function(e){return e});
+  let newDependencies = [].concat(dependencies).concat(targetDependencies).filter(function (e) {
+    return e
+  });
   newDependencies = packmanJson.makeDependenciesUnique(newDependencies);
   newDependencies.sort();
 
   // replace stored dependencies
-  packmanObj.dependencies = newDependencies;
+  if (options.dev) {
+    packmanObj.devDependencies = newDependencies;
+  } else {
+    packmanObj.dependencies = newDependencies;
+  }
   packmanJson.writePackmanObj('.', packmanObj);
 
   console.log('done'.cyan);
 }
 
-function* installAll() {
+function* installAll(options) {
+  options = options || {};
+
+  const isRelease = options.release;
   const packmanObj = yield packmanJson.readPackmanObj('.');
   if (packmanObj === null) {
     console.log('no packman file'.red);
@@ -128,12 +140,13 @@ function* installAll() {
   }
 
   console.log('inspecting dependencies...\n');
-  const dependencies = packmanObj.dependencies;
-  if (!dependencies) {
-    console.log('no dependencies to install'.green);
+  if (!packmanObj.dependencies) {
+    if(isRelease || !packmanObj.devDependencies) { // no dev dependencies and release mode
+      console.log('no dependencies to install'.green);
+    }
     return;
   }
-
+  const dependencies = packmanObj.dependencies.concat(isRelease ? [] : (packmanObj.devDependencies || []));
   yield installDependencies(dependencies, dependencies);
   console.log('done'.cyan);
 }
@@ -143,10 +156,10 @@ function* installLocal(from, to) {
   yield localUtil.clone(from, to);
 }
 
-module.exports = function* (pkgs) {
+module.exports = function*(pkgs, options) {
   if (pkgs && pkgs.length > 0) {
-    yield install(pkgs);
+    yield install(pkgs, options);
     return;
   }
-  yield installAll();
+  yield installAll(options);
 };

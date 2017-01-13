@@ -25,9 +25,11 @@ program
 
 program
   .command('install [pkgs...]')
+  .option('-d, --dev', 'Mark dependency as a dev dependency which will not be in a release build')
+  .option('-r, --release', 'Install only the non-dev dependencies')
   .description('install dependencies')
-  .action(function(pkgs) {
-    packman.install(pkgs).catch(console.error);
+  .action(function(pkgs, options) {
+    packman.install(pkgs, options).catch(console.error);
   });
 
 program
@@ -46,9 +48,10 @@ program
 
 program
   .command('remove [pkgs...]')
+  .option('-d, --dev', 'Mark dependency as a dev dependency which will not be in a release build')
   .description('remove dependencies')
-  .action(function(pkgs) {
-    packman.remove(pkgs).catch(console.error);
+  .action(function(pkgs, options) {
+    packman.remove(pkgs, options).catch(console.error);
   });
 
 program
