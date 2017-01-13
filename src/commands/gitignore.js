@@ -16,7 +16,7 @@ module.exports = function* () {
   } catch (e) {}
 
   const lines = contents.split(/\r?\n/);
-  const ignorePaths = ['node_modules/', '.packman/'];
+  const ignorePaths = ['node_modules/', '.packman/', 'Assets/Plugins/packman-pkgs'];
   let shouldInsert = false;
 
   // pre-pass

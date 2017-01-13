@@ -7,3 +7,5 @@ Assets/
 .packman/
 packman.json
 npm-debug.log.*
+.idea/
+*.iml
